@@ -1,0 +1,86 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <Configurations>Developer - Debug;Release - Alpha;Release - Beta;Release - Final</Configurations>
+    <Platforms>x64</Platforms>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyTitle>BundleCompiler</AssemblyTitle>
+    <Product>BundleCompiler</Product>
+    <Copyright>Copyright ©  2020</Copyright>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <UseWPF>true</UseWPF>
+    <OutputType>Library</OutputType>
+    <RootNamespace>BundleCompiler</RootNamespace>
+    <LangVersion>11</LangVersion>
+    <Nullable>enable</Nullable>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Developer - Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Developer\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release - Alpha|x64' ">
+    <OutputPath>bin\Release\Alpha\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release - Beta|x64'">
+    <OutputPath>bin\Release\Beta\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release - Final|x64'">
+    <OutputPath>bin\Release\Final\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="AtlasTexturePlugin">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Developer\Debug\Plugins\AtlasTexturePlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="FrostyControls">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\FrostyControls.dll</HintPath>
+    </Reference>
+    <Reference Include="FrostyCore">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\FrostyCore.dll</HintPath>
+    </Reference>
+    <Reference Include="FrostyEditor">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\FrostyEditor.exe</HintPath>
+    </Reference>
+    <Reference Include="FrostyHash">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\FrostyHash.dll</HintPath>
+    </Reference>
+    <Reference Include="FrostySdk">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\FrostySdk.dll</HintPath>
+    </Reference>
+    <Reference Include="MeshSetPlugin">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Developer\Debug\Plugins\MeshSetPlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="TexturePlugin">
+      <HintPath>..\..\1063\FrostyToolsuite\FrostyEditor\bin\Developer\Debug\Plugins\TexturePlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="CompileScript\compile_script.dll" />
+  </ItemGroup>
+
+  <!-- This is for copying our binaries into the plugins folder -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <!-- Replace the second directory with the directory to your frosty's plugins folder -->
+    <Exec Condition="'$(Configuration)|$(Platform)' == 'Developer - Debug|x64'" Command="xcopy /Y $(TargetPath) ..\..\1063\FrostyToolsuite\FrostyEditor\bin\Developer\Debug\Plugins\" />
+    <Exec Condition="'$(Configuration)|$(Platform)' == 'Release - Final|x64'" Command="xcopy /Y $(TargetPath) ..\..\1063\FrostyToolsuite\FrostyEditor\bin\Release\Final\Plugins\" />
+  </Target>
+
+</Project>
