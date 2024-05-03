@@ -60,6 +60,11 @@ public class BundleEditor
     public virtual void Bundle(EbxAssetEntry assetEntry, BundleCallStack bundleEntry)
     {
         assetEntry.AddToBundle(bundleEntry.CallerId);
+        if (!assetEntry.HasModifiedData)
+        {
+            BundleOperator.PureBundled.Add(assetEntry.Guid);
+        }
+        App.AssetManager.ModifyEbx(assetEntry.Name, App.AssetManager.GetEbx(assetEntry));
     }
     
     public virtual void Ebx(EbxAssetEntry assetEntry, BundleCallStack bundleEntry)

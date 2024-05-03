@@ -18,6 +18,7 @@ namespace BundleCompiler.Caching
         public readonly CallStackCache CallStackCache = new();
         public readonly BundleCache BundleCache = new();
         public readonly LevelTypeCache LevelTypeCache = new();
+        public readonly ReferenceCache ReferenceCache = new();
 
         public List<BundleCallStack> RootCallStacks => CallStackCache.RootCallStacks;
 
@@ -26,6 +27,7 @@ namespace BundleCompiler.Caching
             CallStackCache.LoadMainCache(logger);
             BundleCache.LoadMainCache(logger);
             LevelTypeCache.LoadMainCache(logger);
+            ReferenceCache.LoadMainCache(logger);
         }
 
         public void ClearCache()
@@ -33,6 +35,7 @@ namespace BundleCompiler.Caching
             CallStackCache.ClearAll();
             BundleCache.ClearAll();
             LevelTypeCache.ClearAll();
+            ReferenceCache.ClearAll();
         }
 
         public void GenerateCache(FrostyTaskWindow? taskWindow = null)
@@ -41,10 +44,38 @@ namespace BundleCompiler.Caching
             CallStackCache.GenerateMainCache(taskWindow);
             BundleCache.GenerateMainCache(taskWindow);
             LevelTypeCache.GenerateMainCache(taskWindow);
+            ReferenceCache.GenerateMainCache(taskWindow);
             LoadCache(taskWindow?.TaskLogger);
         }
 
         #region Cache Management
+        
+        public List<EbxImportReference> GetNetworkReferences(int bunId)
+        {
+            BundleEntry bentry = App.AssetManager.GetBundleEntry(bunId);
+            if (bentry == null)
+                return new List<EbxImportReference>();
+
+            return ReferenceCache.NetworkBunReferences[bunId];
+        }
+
+        public List<EbxImportReference> GetNetworkReferences(BundleCallStack callStack)
+        {
+            if (BundleCache.NetworkedBundles.ContainsKey(callStack.Caller.Name))
+                return new List<EbxImportReference>();
+
+            return GetNetworkReferences(callStack.CallerId);
+        }
+
+        public List<EbxImportReference> GetNetworkReferences(string name)
+        {
+            return ReferenceCache.NetworkStrReferences[name];
+        }
+
+        public List<EbxImportReference> GetNetworkReferences(Guid registry)
+        {
+            return ReferenceCache.NetworkReferences[registry];
+        }
 
         public BundleEntry? GetRootCall(BundleEntry entry)
         {
@@ -69,6 +100,15 @@ namespace BundleCompiler.Caching
             return CallStackCache.CallStackIds[id];
         }
 
+        public EbxAsset? GetNetworkedBundle(int bunId)
+        {
+            BundleEntry bentry = App.AssetManager.GetBundleEntry(bunId);
+            if (bentry == null)
+                return null;
+
+            return GetNetworkedBundle(bentry.Name);
+        }
+
         public EbxAsset? GetNetworkedBundle(string bundleName)
         {
             if (!BundleCache.NetworkedBundles.ContainsKey(bundleName))
@@ -76,6 +116,15 @@ namespace BundleCompiler.Caching
 
             EbxAsset asset = App.AssetManager.GetEbx(BundleCache.NetworkedBundles[bundleName]);
             return asset;
+        }
+        
+        public EbxAsset? GetMvdbBundle(int bunId)
+        {
+            BundleEntry bentry = App.AssetManager.GetBundleEntry(bunId);
+            if (bentry == null)
+                return null;
+
+            return GetMvdbBundle(bentry.Name);
         }
         
         public EbxAsset? GetMvdbBundle(string bundleName)

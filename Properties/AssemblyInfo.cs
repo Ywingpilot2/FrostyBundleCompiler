@@ -23,7 +23,7 @@ using BundleCompiler.Extensions;
 [assembly: Guid("4b612468-9b6a-4304-88a5-055c3575eb3d")]
 
 [assembly: PluginDisplayName("Bundle Compiler")]
-[assembly: PluginAuthor("Y wingpilot2")]
+[assembly: PluginAuthor("Y wingpilot2 & Mophead")]
 [assembly: PluginVersion("1.0.0.0")]
 
 [assembly: RegisterMenuExtension(typeof(CompileButtonExtension))]
@@ -31,5 +31,9 @@ using BundleCompiler.Extensions;
 [assembly: RegisterMenuExtension(typeof(CompileIdTableButtonExtension))]
 [assembly: RegisterMenuExtension(typeof(ClearButtonExtension))]
 [assembly: RegisterMenuExtension(typeof(GenerateCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateStackCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateBundleCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateTypeCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateRefCacheExtension))]
 [assembly: RegisterMenuExtension(typeof(ReloadCacheExtension))]
 [assembly: RegisterStartupAction(typeof(BundleCompilerStartupAction))]

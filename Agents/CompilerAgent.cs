@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using BundleCompiler.Caching;
 using Frosty.Core;
+using FrostySdk.Ebx;
+using FrostySdk.IO;
 using FrostySdk.Managers;
 
 namespace BundleCompiler.Agents
@@ -20,6 +22,7 @@ namespace BundleCompiler.Agents
         private void CrawlDownStack(BundleCallStack rootCall)
         {
             int bunId = rootCall.CallerId;
+            BundleOperator.AddWhitelistedBundle(rootCall);
 
             // We need to only check this call if it contains anything modified
             // Problem: LevelDatas will almost always be modified due to UnlockIdTables
@@ -53,7 +56,12 @@ namespace BundleCompiler.Agents
                 }
             }
 
-            _loadedBundles.Add(bunId);
+            // We cannot guarantee a blueprint bundle will actually be loaded
+            if (rootCall.Caller.Type != BundleType.BlueprintBundle)
+            {
+                _loadedBundles.Add(bunId);
+            }
+            
             foreach (BundleCallStack callStack in rootCall.Stacks)
             {
                 CrawlDownStack(callStack);
@@ -147,12 +155,53 @@ namespace BundleCompiler.Agents
                         entries.Remove(entries[0]);
                     }
                 }
+
+                EbxAsset? reg = BundleOperator.CacheManager.GetNetworkedBundle(valuePair.Key);
+                if (reg == null)
+                    continue;
+
+                List<PointerRef> objects = ((dynamic)reg.RootObject).Objects;
+                List<EbxImportReference>? list = BundleOperator.CacheManager.GetNetworkReferences(valuePair.Key);
+                for (var i = 0; i < list.Count; i++)
+                {
+                    EbxImportReference importReference = list[i];
+                    EbxAssetEntry entry = App.AssetManager.GetEbxEntry(importReference.FileGuid);
+                    if (!entry.HasModifiedData)
+                        continue;
+                    
+                    EbxAsset asset = App.AssetManager.GetEbx(entry);
+                    if (asset.GetObject(importReference.ClassGuid) == null)
+                    {
+                        objects.Remove(new PointerRef(importReference));
+                    }
+                }
             }
 
 #if DEVELOPER___DEBUG
             stopwatch.Stop();
             App.Logger.LogWarning("Compiled {0}'s bundles in {1}", rootCall.ToString(), stopwatch.Elapsed.ToString());
 #endif
+        }
+
+        private void ValidateNetworkRegistry(EbxAsset netreg)
+        {
+            List<PointerRef> objects = ((dynamic)netreg.RootObject).Objects;
+            List<PointerRef> pots = new List<PointerRef>(((dynamic)netreg.RootObject).Objects);
+
+            foreach (PointerRef pointerRef in pots)
+            {
+                EbxAssetEntry? entry = App.AssetManager.GetEbxEntry(pointerRef.External.FileGuid);
+                if (entry == null)
+                {
+                    objects.Remove(pointerRef);
+                }
+
+                EbxAsset asset = App.AssetManager.GetEbx(entry);
+                if (asset.GetObject(pointerRef.External.ClassGuid) == null)
+                {
+                    objects.Remove(pointerRef);
+                }
+            }
         }
 
         public CompilerAgent()

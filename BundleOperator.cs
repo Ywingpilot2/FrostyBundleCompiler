@@ -7,6 +7,7 @@ using BundleCompiler.Agents;
 using BundleCompiler.Caching;
 using Frosty.Core;
 using Frosty.Core.Windows;
+using FrostySdk;
 using FrostySdk.Interfaces;
 using FrostySdk.IO;
 using FrostySdk.Managers;
@@ -16,6 +17,8 @@ namespace BundleCompiler
     public static class BundleOperator
     {
         public static CacheManager CacheManager { get; private set; }
+        public static List<Guid> PureBundled { get; } = new();
+        public static bool WhitelistBundles = false;
 
         public static void CompileBundles(FrostyTaskWindow? task = null)
         {
@@ -80,7 +83,11 @@ namespace BundleCompiler
                             break;
                         
                         assetEntry.AddedBundles.Clear();
-                        App.AssetManager.ModifyEbx(assetEntry.Name, App.AssetManager.GetEbx(assetEntry));
+                        if (!assetEntry.HasModifiedData || PureBundled.Contains(assetEntry.Guid))
+                        {
+                            App.AssetManager.RevertAsset(assetEntry);
+                            PureBundled.Remove(assetEntry.Guid);
+                        }
                     } break;
                 }
             }
@@ -96,6 +103,34 @@ namespace BundleCompiler
             }
             
             App.WhitelistedBundles.Clear();
+            WhitelistBundles = false;
+        }
+
+        public static void AddWhitelistedBundle(BundleCallStack callStack)
+        {
+            AddWhitelistedBundle(callStack.Caller);
+        }
+        
+        public static void AddWhitelistedBundle(BundleEntry bentry)
+        {
+            if (!WhitelistBundles)
+                return;
+            
+            int hash = HashBundle(bentry);
+            if (App.WhitelistedBundles.Contains(hash))
+                return;
+            
+            App.WhitelistedBundles.Add(hash);
+        }
+        
+        public static int HashBundle(BundleEntry bundle)
+        {
+            int hash = Utils.HashString(bundle.Name, true);
+
+            if (bundle.Name.Length == 8 && int.TryParse(bundle.Name, System.Globalization.NumberStyles.HexNumber, null, out int tmp))
+                hash = tmp;
+
+            return hash;
         }
 
         public static void Initialize(ILogger? logger = null)

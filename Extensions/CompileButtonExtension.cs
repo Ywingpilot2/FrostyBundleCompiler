@@ -62,7 +62,6 @@ namespace BundleCompiler.Extensions
                 {
                     BundleCallStack menuStack = BundleOperator.CacheManager.GetCallStack(i);
                     BundleOperator.CompileBundle(menuStack, task);
-                    App.WhitelistedBundles.Add(menuStack.CallerId);
                 }
                 
                 int bunId = App.AssetManager.GetBundleId(result);
@@ -71,8 +70,6 @@ namespace BundleCompiler.Extensions
 
                 BundleCallStack callStack = BundleOperator.CacheManager.GetCallStack(bunId);
                 BundleOperator.CompileBundle(callStack, task);
-
-                App.WhitelistedBundles.Add(callStack.CallerId);
             });
         });
     }

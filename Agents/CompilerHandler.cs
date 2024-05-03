@@ -51,6 +51,7 @@ public class WeaponUnlockHandler : CompilerHandler
             return;
         }
         
+        BundleOperator.AddWhitelistedBundle(_sharedBundle);
         BundleEditor.AddToBundle(assetEntry, BundleOperator.CacheManager.GetCallStack(_sharedBunId));
         foreach (Guid dependency in assetEntry.EnumerateDependencies())
         {
