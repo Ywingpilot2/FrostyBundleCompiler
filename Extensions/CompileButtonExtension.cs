@@ -61,6 +61,12 @@ namespace BundleCompiler.Extensions
             FrostyTaskWindow.Show("Compiling bundle...", "", task =>
             {
                 BundleOperator.ClearBundles();
+                // TODO: Why is this causing issues?
+                // foreach (BundleCallStack sharedCall in BundleOperator.CacheManager.EnumerateRootCalls(BundleType.SharedBundle))
+                // {
+                //     BundleOperator.CompileBundle(sharedCall, task);
+                // }
+                
                 foreach (int i in BundleOperator.CacheManager.LevelTypeCache.MenuBundleCache)
                 {
                     BundleCallStack menuStack = BundleOperator.CacheManager.GetCallStack(i);

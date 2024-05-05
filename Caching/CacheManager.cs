@@ -49,7 +49,18 @@ namespace BundleCompiler.Caching
         }
 
         #region Cache Management
-        
+
+        public IEnumerable<BundleCallStack> EnumerateRootCalls(BundleType type = BundleType.None)
+        {
+            foreach (BundleCallStack callStack in RootCallStacks)
+            {
+                if (type != BundleType.None && callStack.Caller.Type != type)
+                    continue;
+
+                yield return callStack;
+            }
+        }
+
         public List<EbxImportReference> GetNetworkReferences(int bunId)
         {
             BundleEntry bentry = App.AssetManager.GetBundleEntry(bunId);

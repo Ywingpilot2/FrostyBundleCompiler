@@ -15,7 +15,7 @@ namespace BundleCompiler.Agents
         // This organizes everything which needs to be compiled into a big orderly list
         private Dictionary<int, List<EbxAssetEntry>> _assetsToCompile = new();
         // This is a list of every asset we have determined so far. 
-        private List<string> _checkedAssets = new();
+        private Dictionary<int, List<string>> _checkedAssets = new();
         // A list of bundles that are currently loaded
         private List<int> _loadedBundles = new();
 
@@ -23,6 +23,7 @@ namespace BundleCompiler.Agents
         {
             int bunId = rootCall.CallerId;
             BundleOperator.AddWhitelistedBundle(rootCall);
+            _checkedAssets.Add(bunId, new List<string>());
 
             // We need to only check this call if it contains anything modified
             // Problem: LevelDatas will almost always be modified due to UnlockIdTables
@@ -52,7 +53,7 @@ namespace BundleCompiler.Agents
                         continue;
                 
                     _assetsToCompile[bunId].Add(assetEntry);
-                    _checkedAssets.Add(assetEntry.Name);
+                    _checkedAssets[bunId].Add(assetEntry.Name);
                 }
             }
 
@@ -66,15 +67,22 @@ namespace BundleCompiler.Agents
             {
                 CrawlDownStack(callStack);
             }
+
+            if (rootCall.Caller.Type != BundleType.SharedBundle)
+            {
+                _loadedBundles.Remove(bunId);
+            }
         }
 
         private void CheckDependencies(EbxAssetEntry assetEntry, BundleCallStack rootCall)
         {
-            int bunId = App.AssetManager.GetBundleId(rootCall.Caller);
+            int bunId = rootCall.CallerId;
             
             foreach (Guid dependency in assetEntry.EnumerateDependencies())
             {
                 EbxAssetEntry reference = App.AssetManager.GetEbxEntry(dependency);
+                if (reference == null)
+                    continue;
                     
                 // Already in this bundle
                 if (reference.Bundles.Contains(bunId))
@@ -88,7 +96,7 @@ namespace BundleCompiler.Agents
                 if (reference.Bundles.Any(b => rootCall.CallsBundle(b, true)))
                     continue;
 
-                if (_checkedAssets.Contains(reference.Name))
+                if (_checkedAssets[bunId].Contains(reference.Name))
                 {
                     BundleEntry entry = GetAssetBundle(reference)!;
 
@@ -107,7 +115,7 @@ namespace BundleCompiler.Agents
                     continue;
                     
                 _assetsToCompile[bunId].Add(reference);
-                _checkedAssets.Add(reference.Name);
+                _checkedAssets[bunId].Add(reference.Name);
                 
                 CheckDependencies(reference, rootCall);
             }

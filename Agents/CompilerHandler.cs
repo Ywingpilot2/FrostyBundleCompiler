@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using BundleCompiler.Caching;
 using Frosty.Core;
+using FrostySdk;
 using FrostySdk.Managers;
 
 namespace BundleCompiler.Agents;
@@ -13,12 +14,42 @@ public abstract class CompilerHandler
 
     public static bool HasHandler(string type)
     {
-        return _compileHandlers.ContainsKey(type);
+        if (!_compileHandlers.ContainsKey(type))
+        {
+            foreach (string key in _compileHandlers.Keys)
+            {
+                if (!TypeLibrary.IsSubClassOf(type, key))
+                    continue;
+
+                return true;
+            }
+        }
+        else
+        {
+            return true;
+        }
+        
+        return false;
     }
 
     public static CompilerHandler GetHandler(string type)
     {
-        return _compileHandlers[type];
+        if (!_compileHandlers.ContainsKey(type))
+        {
+            foreach (string key in _compileHandlers.Keys)
+            {
+                if (!TypeLibrary.IsSubClassOf(type, key))
+                    continue;
+
+                return _compileHandlers[key];
+            }
+        }
+        else
+        {
+            return _compileHandlers[type];
+        }
+
+        throw new IndexOutOfRangeException("Unable to find the specified handler");
     }
 
     static CompilerHandler()
@@ -40,8 +71,8 @@ public abstract class CompilerHandler
 public class WeaponUnlockHandler : CompilerHandler
 {
     public override string AssetType => "SoldierWeaponUnlockAsset";
-    private int _sharedBunId;
-    private BundleEntry _sharedBundle;
+    private static int _sharedBunId;
+    private static BundleEntry _sharedBundle;
     
     public override void CompileAssetBundle(EbxAssetEntry assetEntry, BundleCallStack bundleEntry, List<EbxAssetEntry> entries)
     {
@@ -62,7 +93,7 @@ public class WeaponUnlockHandler : CompilerHandler
         entries.Remove(assetEntry);
     }
 
-    public WeaponUnlockHandler()
+    static WeaponUnlockHandler()
     {
         _sharedBunId = App.AssetManager.GetBundleId("win32/gameplay/bundles/weaponsbundlecommon");
         _sharedBundle = App.AssetManager.GetBundleEntry(_sharedBunId);
@@ -101,5 +132,31 @@ public class WeaponUnlockHandler : CompilerHandler
             RecursiveAdd(referenceEntry, entries);
         }
         entries.Remove(assetEntry);
+    }
+}
+
+public class ProfileOptionHandler : CompilerHandler
+{
+    public override string AssetType => "ProfileOptionData";
+    private static int _wsgameconfiguration;
+    private static int _defaultsettingswin32;
+
+    public override void CompileAssetBundle(EbxAssetEntry assetEntry, BundleCallStack bundleEntry, List<EbxAssetEntry> entries)
+    {
+        if (assetEntry.AddedBundles.Contains(_wsgameconfiguration))
+        {
+            entries.Remove(assetEntry);
+            return;
+        }
+        
+        BundleEditor.AddToBundle(assetEntry, BundleOperator.CacheManager.GetCallStack(_wsgameconfiguration));
+        BundleEditor.AddToBundle(assetEntry, BundleOperator.CacheManager.GetCallStack(_defaultsettingswin32));
+        entries.Remove(assetEntry);
+    }
+
+    static ProfileOptionHandler()
+    {
+        _wsgameconfiguration = App.AssetManager.GetBundleId("win32/gameplay/wsgameconfiguration");
+        _defaultsettingswin32 = App.AssetManager.GetBundleId("win32/default_settings_win32");
     }
 }
