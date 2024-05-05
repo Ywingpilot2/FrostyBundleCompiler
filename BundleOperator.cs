@@ -112,11 +112,19 @@ namespace BundleCompiler
             foreach (ChunkAssetEntry chunk in App.AssetManager.EnumerateChunks())
             {
                 chunk.AddedBundles.Clear();
+                if (!chunk.HasModifiedData)
+                {
+                    App.AssetManager.RevertAsset(chunk);
+                }
             }
 
             foreach (ResAssetEntry resAssetEntry in App.AssetManager.EnumerateRes())
             {
                 resAssetEntry.AddedBundles.Clear();
+                if (!resAssetEntry.HasModifiedData)
+                {
+                    App.AssetManager.RevertAsset(resAssetEntry);
+                }
             }
             
             App.WhitelistedBundles.Clear();
