@@ -7,7 +7,9 @@
         xmlns:controls="clr-namespace:Frosty.Controls;assembly=FrostyControls"
         xmlns:controls1="clr-namespace:Frosty.Core.Controls;assembly=FrostyCore"
         mc:Ignorable="d"
-        Title="Selection Screen" Height="230" Width="500">
+        Title="Selection Screen" Height="260" Width="500" 
+        Background="{StaticResource WindowBackground}"
+        WindowStartupLocation="CenterScreen">
     <controls:FrostyWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -16,7 +18,9 @@
         </ResourceDictionary>
     </controls:FrostyWindow.Resources>
     
-    <Grid Background="{StaticResource WindowBackground}">
+    <Grid Background="{StaticResource WindowBackground}"
+          Height="230"
+          VerticalAlignment="Top">
         <Grid.RowDefinitions>
             <RowDefinition Height="180"/>
             <RowDefinition />

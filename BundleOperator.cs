@@ -41,22 +41,39 @@ namespace BundleCompiler
 
         public static void CompileIdTables()
         {
-            foreach (EbxAssetEntry assetEntry in App.AssetManager.EnumerateEbx("UnlockAssetBase", true))
+            StackCrawlerAgent agent = new StackCrawlerAgent();
+            foreach (BundleCallStack callStack in CacheManager.RootCallStacks)
             {
-                EbxAsset asset = App.AssetManager.GetEbx(assetEntry);
-                dynamic root = asset.RootObject;
-                
-                foreach (EbxAssetEntry levelEntry in App.AssetManager.EnumerateEbx("LevelData"))
-                {
-                    EbxAsset level = App.AssetManager.GetEbx(levelEntry);
-                    dynamic levelRoot = level.RootObject;
-                
-                    if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
-                        return;
+                if (callStack.Caller.Type != BundleType.SubLevel)
+                    continue;
 
-                    levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
-                    App.AssetManager.ModifyEbx(App.AssetManager.GetEbxEntry(level.FileGuid).Name, level);
-                }
+                EbxAssetEntry? levelEntry = callStack.Asset;
+                if (levelEntry == null)
+                    continue;
+                EbxAsset level = App.AssetManager.GetEbx(levelEntry);
+                dynamic levelRoot = level.RootObject;
+                
+                agent.CrawlDownStack(callStack, stack =>
+                {
+                    foreach (EbxAssetEntry assetEntry in App.AssetManager.EnumerateEbx(stack.Caller))
+                    {
+                        foreach (Guid dependency in assetEntry.EnumerateDependencies())
+                        {
+                            EbxAssetEntry potentialUnlock = App.AssetManager.GetEbxEntry(dependency);
+                            if (!TypeLibrary.IsSubClassOf(potentialUnlock.Type, "UnlockAssetBase"))
+                                continue;
+
+                            EbxAsset asset = App.AssetManager.GetEbx(potentialUnlock);
+                            dynamic root = asset.RootObject;
+                            
+                            if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
+                                return;
+
+                            levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
+                            App.AssetManager.ModifyEbx(App.AssetManager.GetEbxEntry(level.FileGuid).Name, level);
+                        }
+                    }
+                });
             }
         }
 

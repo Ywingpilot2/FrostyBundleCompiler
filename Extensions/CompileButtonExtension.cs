@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using BundleCompiler.Caching;
@@ -43,12 +44,14 @@ namespace BundleCompiler.Extensions
         public override RelayCommand MenuItemClicked => new RelayCommand(o =>
         {
             List<string> options = new List<string>();
+            List<string> fullNames = new List<string>();
             foreach (BundleCallStack callStack in BundleOperator.CacheManager.RootCallStacks)
             {
                 if (callStack.Caller.Type != BundleType.SubLevel)
                     continue;
                 
-                options.Add(callStack.Caller.DisplayName);
+                options.Add(callStack.Caller.Name.Split('/').Last());
+                fullNames.Add(callStack.Caller.Name);
             }
 
             string? result = CompileBundleWindow.Show(options);
@@ -64,7 +67,7 @@ namespace BundleCompiler.Extensions
                     BundleOperator.CompileBundle(menuStack, task);
                 }
                 
-                int bunId = App.AssetManager.GetBundleId(result);
+                int bunId = App.AssetManager.GetBundleId(fullNames[options.IndexOf(result)]);
                 if (bunId == -1)
                     return;
 
@@ -107,6 +110,7 @@ namespace BundleCompiler.Extensions
             {
                 BundleOperator.ClearBundles();
             });
+            App.Logger.Log("Cleared bundles");
         });
     }
 }

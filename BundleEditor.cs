@@ -59,12 +59,12 @@ public class BundleEditor
     
     public virtual void Bundle(EbxAssetEntry assetEntry, BundleCallStack bundleEntry)
     {
-        assetEntry.AddToBundle(bundleEntry.CallerId);
         if (!assetEntry.HasModifiedData)
         {
             BundleOperator.PureBundled.Add(assetEntry.Guid);
         }
         App.AssetManager.ModifyEbx(assetEntry.Name, App.AssetManager.GetEbx(assetEntry));
+        assetEntry.AddToBundle(bundleEntry.CallerId);
     }
     
     public virtual void Ebx(EbxAssetEntry assetEntry, BundleCallStack bundleEntry)
@@ -114,6 +114,10 @@ public class SoundWaveExtension : BundleEditor
         foreach (var soundDataChunk in soundAsset.Chunks)
         {
             ChunkAssetEntry chunkEntry = App.AssetManager.GetChunkEntry(soundDataChunk.ChunkId);
+            // TODO: Work around for me removing this check in AssetManager to force add chunks
+            if (chunkEntry.Bundles.Count == 0 && !chunkEntry.IsAdded)
+                continue;
+            
             chunkEntry.AddToBundle(bundleEntry.CallerId);
             assetEntry.LinkAsset(chunkEntry);
         }
@@ -135,7 +139,12 @@ public class MovieTextureExtension : BundleEditor
         dynamic movieAsset = asset.RootObject;
 
         ChunkAssetEntry chunkEntry = App.AssetManager.GetChunkEntry(movieAsset.ChunkGuid);
-        chunkEntry.AddToBundle(bentry.CallerId);
+        // TODO: Work around for me removing this check in AssetManager to force add chunks
+        if (chunkEntry.Bundles.Count != 0 || chunkEntry.IsAdded)
+        {
+            chunkEntry.AddToBundle(bentry.CallerId);
+        }
+        
         entry.LinkAsset(chunkEntry);
 
         chunkEntry = App.AssetManager.GetChunkEntry(movieAsset.SubtitleChunkGuid);
@@ -204,8 +213,12 @@ public class AtlasTexureExtension : BundleEditor
 
         AtlasTexture texture = App.AssetManager.GetResAs<AtlasTexture>(resEntry);
         ChunkAssetEntry chunkEntry = App.AssetManager.GetChunkEntry(texture.ChunkId);
-
-        chunkEntry.AddToBundle(bentry.CallerId);
+        
+        // TODO: Work around for me removing this check in AssetManager to force add chunks
+        if (chunkEntry.Bundles.Count != 0 || chunkEntry.IsAdded)
+        {
+            chunkEntry.AddToBundle(bentry.CallerId);
+        }
 
         resEntry.LinkAsset(chunkEntry);
         entry.LinkAsset(resEntry);
@@ -230,7 +243,7 @@ public class MeshExtension : BundleEditor
         entry.LinkAsset(resEntry);
 
         MeshSet meshSetRes = App.AssetManager.GetResAs<MeshSet>(resEntry);
-        App.AssetManager.ModifyRes(resEntry.ResRid, meshSetRes);
+        
         //Double check if there are any LODs in the Rigid Mesh, if there are, bundle and link them. Else, just bundle the EBX and move on.
         if (meshSetRes.Lods.Count > 0)
         {
@@ -239,10 +252,19 @@ public class MeshExtension : BundleEditor
                 if (lod.ChunkId != Guid.Empty)
                 {
                     ChunkAssetEntry chunkEntry = App.AssetManager.GetChunkEntry(lod.ChunkId);
+                    // TODO: Work around for me removing this check in AssetManager to force add chunks
+                    if (chunkEntry.Bundles.Count == 0 && !chunkEntry.IsAdded)
+                        continue;
+                    
                     chunkEntry.AddToBundle(bentry.CallerId);
                     resEntry.LinkAsset(chunkEntry);
                 }
             }
+        }
+
+        if (!MeshVariationDb.IsLoaded)
+        {
+            MeshVariationDb.LoadVariations();
         }
 
         //SWBF2 has a fancy setup with SBDs, we need to bundle those too
@@ -293,6 +315,15 @@ public class MeshExtension : BundleEditor
                                 foreach (dynamic texParam in (dynamic)mvm.TextureParameters)
                                 {
                                     materialEntry.TextureParameters.Add(texParam);
+                                    PointerRef value = texParam.Value;
+                                    EbxAssetEntry tex = App.AssetManager.GetEbxEntry(value.External.FileGuid);
+                                    
+                                    // Don't add this texture if its being handled later
+                                    if (tex.EnumerateBundles().Any(b => App.AssetManager.GetBundleEntry(b).Type == BundleType.SharedBundle 
+                                                                        || bundleEntry.CallsBundle(b)))
+                                        continue;
+                                    
+                                    AddToBundle(tex, bundleEntry);
                                 }
                                 break;
                             }
@@ -349,8 +380,13 @@ public class TextureExtension : BundleEditor
 
         Texture texture = App.AssetManager.GetResAs<Texture>(resEntry);
         ChunkAssetEntry chunkEntry = App.AssetManager.GetChunkEntry(texture.ChunkId);
-
-        chunkEntry.AddToBundle(bentry.CallerId);
+        
+        // TODO: Work around for me removing this check in AssetManager to force add chunks
+        if (chunkEntry.Bundles.Count != 0 || chunkEntry.IsAdded)
+        {
+            chunkEntry.AddToBundle(bentry.CallerId);
+        }
+        
         chunkEntry.FirstMip = texture.FirstMip;
 
         resEntry.LinkAsset(chunkEntry);
