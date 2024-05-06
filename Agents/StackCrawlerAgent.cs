@@ -85,6 +85,9 @@ public class StackCrawlerAgent
             // Only enumerate modified ebx
             if (!assetEntry.IsModified)
                 continue;
+            
+            if (_checkedAssets[rootCall.CallerId].Contains(assetEntry.Name))
+                continue;
                 
             if (assetEntry.Type is "NetworkRegistryAsset" or "MeshVariationDatabase")
                 continue;
@@ -126,6 +129,9 @@ public class StackCrawlerAgent
             EbxAssetEntry reference = App.AssetManager.GetEbxEntry(dependency);
             if (reference == null)
                 continue;
+            
+            if (_checkedAssets[rootCall.CallerId].Contains(reference.Name))
+                continue;
                     
             // Already in this bundle
             if (reference.Bundles.Contains(rootCall.CallerId))
@@ -139,7 +145,7 @@ public class StackCrawlerAgent
             if (reference.Bundles.Any(b => rootCall.CallsBundle(b, true)))
                 continue;
             
-            action.Invoke(assetEntry);
+            action.Invoke(reference);
             _checkedAssets[rootCall.CallerId].Add(reference.Name);
             
             CheckDependencies(reference, rootCall, action);

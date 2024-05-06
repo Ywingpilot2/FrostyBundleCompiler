@@ -243,6 +243,7 @@ public class MeshExtension : BundleEditor
         entry.LinkAsset(resEntry);
 
         MeshSet meshSetRes = App.AssetManager.GetResAs<MeshSet>(resEntry);
+        App.AssetManager.ModifyRes(resEntry.ResRid, meshSetRes);
         
         //Double check if there are any LODs in the Rigid Mesh, if there are, bundle and link them. Else, just bundle the EBX and move on.
         if (meshSetRes.Lods.Count > 0)

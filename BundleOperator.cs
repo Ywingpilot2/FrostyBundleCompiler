@@ -41,34 +41,40 @@ namespace BundleCompiler
 
         public static void CompileIdTables()
         {
-            StackCrawlerAgent agent = new StackCrawlerAgent();
             foreach (BundleCallStack callStack in CacheManager.RootCallStacks)
             {
                 if (callStack.Caller.Type != BundleType.SubLevel)
                     continue;
 
-                EbxAssetEntry? levelEntry = callStack.Asset;
-                if (levelEntry == null)
-                    continue;
-                
-                EbxAsset level = App.AssetManager.GetEbx(levelEntry);
-                dynamic levelRoot = level.RootObject;
-                
-                agent.CrawlThroughCompilable(callStack, entry =>
-                {
-                    if (TypeLibrary.IsSubClassOf(entry.Type, "UnlockAssetBase"))
-                        return;
-
-                    EbxAsset asset = App.AssetManager.GetEbx(entry);
-                    dynamic root = asset.RootObject;
-                    if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
-                        return;
-
-                    levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
-                    
-                    App.AssetManager.ModifyEbx(levelEntry.Name, level);
-                });
+                CompileIdTable(callStack);
             }
+        }
+
+        public static void CompileIdTable(BundleCallStack callStack)
+        {
+            StackCrawlerAgent agent = new StackCrawlerAgent();
+            
+            EbxAssetEntry? levelEntry = callStack.Asset;
+            if (levelEntry == null)
+                return;
+                
+            EbxAsset level = App.AssetManager.GetEbx(levelEntry);
+            dynamic levelRoot = level.RootObject;
+                
+            agent.CrawlThroughCompilable(callStack, entry =>
+            {
+                if (!TypeLibrary.IsSubClassOf(entry.Type, "UnlockAssetBase"))
+                    return;
+
+                EbxAsset asset = App.AssetManager.GetEbx(entry);
+                dynamic root = asset.RootObject;
+                if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
+                    return;
+
+                levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
+                    
+                App.AssetManager.ModifyEbx(levelEntry.Name, level);
+            });
         }
 
         public static void ClearBundles()

@@ -83,7 +83,7 @@ namespace BundleCompiler.Extensions
         });
     }
     
-    public class CompileIdTableButtonExtension : MenuExtension
+    public class CompileIdTablesButtonExtension : MenuExtension
     {
         public override string TopLevelMenuName => "Tools";
         public override string SubLevelMenuName => "Bundle Compilation";
@@ -100,6 +100,51 @@ namespace BundleCompiler.Extensions
                 BundleOperator.CompileIdTables();
                 stopwatch.Stop();
                 App.Logger.Log("Compiled UnlockIdTables in {0}", stopwatch.Elapsed.ToString());
+            });
+        });
+    }
+    
+    public class CompileTableExtension : MenuExtension
+    {
+        public override string TopLevelMenuName => "Tools";
+        public override string SubLevelMenuName => "Bundle Compilation";
+        public override string MenuItemName => "Compile UnlockIdTable";
+        
+        public override ImageSource Icon => new ImageSourceConverter().ConvertFromString("pack://application:,,,/FrostyEditor;component/Images/compile.png") as ImageSource;
+
+        public override RelayCommand MenuItemClicked => new RelayCommand(o =>
+        {
+            List<string> options = new List<string>();
+            List<string> fullNames = new List<string>();
+            foreach (BundleCallStack callStack in BundleOperator.CacheManager.RootCallStacks)
+            {
+                if (callStack.Caller.Type != BundleType.SubLevel || callStack.Asset?.Type != "LevelData")
+                    continue;
+                
+                options.Add(callStack.Caller.Name.Split('/').Last());
+                fullNames.Add(callStack.Caller.Name);
+            }
+
+            string? result = CompileBundleWindow.Show(options);
+            if (result == null)
+                return;
+            
+            FrostyTaskWindow.Show("Compiling table...", "", task =>
+            {
+                BundleOperator.ClearBundles();
+
+                foreach (int i in BundleOperator.CacheManager.LevelTypeCache.MenuBundleCache)
+                {
+                    BundleCallStack menuStack = BundleOperator.CacheManager.GetCallStack(i);
+                    BundleOperator.CompileIdTable(menuStack);
+                }
+                
+                int bunId = App.AssetManager.GetBundleId(fullNames[options.IndexOf(result)]);
+                if (bunId == -1)
+                    return;
+
+                BundleCallStack callStack = BundleOperator.CacheManager.GetCallStack(bunId);
+                BundleOperator.CompileIdTable(callStack);
             });
         });
     }

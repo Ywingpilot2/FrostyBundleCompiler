@@ -28,7 +28,8 @@ using BundleCompiler.Extensions;
 
 [assembly: RegisterMenuExtension(typeof(CompileButtonExtension))]
 [assembly: RegisterMenuExtension(typeof(CompileBundleExtension))]
-[assembly: RegisterMenuExtension(typeof(CompileIdTableButtonExtension))]
+[assembly: RegisterMenuExtension(typeof(CompileIdTablesButtonExtension))]
+[assembly: RegisterMenuExtension(typeof(CompileTableExtension))]
 [assembly: RegisterMenuExtension(typeof(ClearButtonExtension))]
 [assembly: RegisterMenuExtension(typeof(GenerateCacheExtension))]
 [assembly: RegisterMenuExtension(typeof(GenerateStackCacheExtension))]
