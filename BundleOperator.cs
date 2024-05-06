@@ -50,29 +50,23 @@ namespace BundleCompiler
                 EbxAssetEntry? levelEntry = callStack.Asset;
                 if (levelEntry == null)
                     continue;
+                
                 EbxAsset level = App.AssetManager.GetEbx(levelEntry);
                 dynamic levelRoot = level.RootObject;
                 
-                agent.CrawlDownStack(callStack, stack =>
+                agent.CrawlThroughCompilable(callStack, entry =>
                 {
-                    foreach (EbxAssetEntry assetEntry in App.AssetManager.EnumerateEbx(stack.Caller))
-                    {
-                        foreach (Guid dependency in assetEntry.EnumerateDependencies())
-                        {
-                            EbxAssetEntry potentialUnlock = App.AssetManager.GetEbxEntry(dependency);
-                            if (!TypeLibrary.IsSubClassOf(potentialUnlock.Type, "UnlockAssetBase"))
-                                continue;
+                    if (TypeLibrary.IsSubClassOf(entry.Type, "UnlockAssetBase"))
+                        return;
 
-                            EbxAsset asset = App.AssetManager.GetEbx(potentialUnlock);
-                            dynamic root = asset.RootObject;
-                            
-                            if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
-                                return;
+                    EbxAsset asset = App.AssetManager.GetEbx(entry);
+                    dynamic root = asset.RootObject;
+                    if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
+                        return;
 
-                            levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
-                            App.AssetManager.ModifyEbx(App.AssetManager.GetEbxEntry(level.FileGuid).Name, level);
-                        }
-                    }
+                    levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
+                    
+                    App.AssetManager.ModifyEbx(levelEntry.Name, level);
                 });
             }
         }
