@@ -19,6 +19,7 @@ namespace BundleCompiler.Caching
         public readonly BundleCache BundleCache = new();
         public readonly LevelTypeCache LevelTypeCache = new();
         public readonly ReferenceCache ReferenceCache = new();
+        public readonly UnlockIdCache IdCache = new();
 
         public List<BundleCallStack> RootCallStacks => CallStackCache.RootCallStacks;
 
@@ -28,6 +29,7 @@ namespace BundleCompiler.Caching
             BundleCache.LoadMainCache(logger);
             LevelTypeCache.LoadMainCache(logger);
             ReferenceCache.LoadMainCache(logger);
+            IdCache.LoadMainCache(logger);
         }
 
         public void ClearCache()
@@ -36,6 +38,7 @@ namespace BundleCompiler.Caching
             BundleCache.ClearAll();
             LevelTypeCache.ClearAll();
             ReferenceCache.ClearAll();
+            IdCache.ClearAll();
         }
 
         public void GenerateCache(FrostyTaskWindow? taskWindow = null)
@@ -45,6 +48,7 @@ namespace BundleCompiler.Caching
             BundleCache.GenerateMainCache(taskWindow);
             LevelTypeCache.GenerateMainCache(taskWindow);
             ReferenceCache.GenerateMainCache(taskWindow);
+            IdCache.GenerateMainCache(taskWindow);
             LoadCache(taskWindow?.TaskLogger);
         }
 

@@ -36,5 +36,7 @@ using BundleCompiler.Extensions;
 [assembly: RegisterMenuExtension(typeof(GenerateBundleCacheExtension))]
 [assembly: RegisterMenuExtension(typeof(GenerateTypeCacheExtension))]
 [assembly: RegisterMenuExtension(typeof(GenerateRefCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateIdCacheExtension))]
 [assembly: RegisterMenuExtension(typeof(ReloadCacheExtension))]
+[assembly: RegisterMenuExtension(typeof(GenerateUnlockIdsExtension))]
 [assembly: RegisterStartupAction(typeof(BundleCompilerStartupAction))]

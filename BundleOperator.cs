@@ -66,12 +66,22 @@ namespace BundleCompiler
                 if (!TypeLibrary.IsSubClassOf(entry.Type, "UnlockAssetBase"))
                     return;
 
-                EbxAsset asset = App.AssetManager.GetEbx(entry);
-                dynamic root = asset.RootObject;
-                if (levelRoot.UnlockIdTable.Identifiers.Contains(root.Identifier))
+                uint identifier;
+                if (CacheManager.IdCache.UnlockAssetToId.ContainsKey(entry.Name))
+                {
+                    identifier = (uint)CacheManager.IdCache.UnlockAssetToId[entry.Name];
+                }
+                else
+                {
+                    EbxAsset asset = App.AssetManager.GetEbx(entry);
+                    dynamic root = asset.RootObject;
+                    identifier = (uint)root.Identifier;
+                }
+                
+                if (levelRoot.UnlockIdTable.Identifiers.Contains(identifier))
                     return;
 
-                levelRoot.UnlockIdTable.Identifiers.Add(root.Identifier);
+                levelRoot.UnlockIdTable.Identifiers.Add(identifier);
                     
                 App.AssetManager.ModifyEbx(levelEntry.Name, level);
             });

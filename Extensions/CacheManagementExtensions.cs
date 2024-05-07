@@ -87,6 +87,23 @@ public class GenerateRefCacheExtension : MenuExtension
     });
 }
 
+public class GenerateIdCacheExtension : MenuExtension
+{
+    public override string TopLevelMenuName => "Tools";
+    public override string SubLevelMenuName => "Bundle Cache";
+    public override string MenuItemName => "Generate Id Cache";
+
+    public override RelayCommand MenuItemClicked => new RelayCommand(o =>
+    {
+        FrostyTaskWindow.Show("Generating cache...", "", task =>
+        {
+            BundleOperator.CacheManager.ClearCache();
+            BundleOperator.CacheManager.IdCache.GenerateMainCache(task);
+            BundleOperator.CacheManager.LoadCache();
+        });
+    });
+}
+
 public class ReloadCacheExtension : MenuExtension
 {
     public override string TopLevelMenuName => "Tools";
