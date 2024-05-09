@@ -20,11 +20,28 @@ namespace BundleCompiler
         public static List<Guid> PureBundled { get; } = new();
         public static bool WhitelistBundles = false;
 
+        #region Options
+
+        public static bool BundleMultiplayer => Config.Get("BundleCompiler_Multi", false);
+        public static bool BundleSingleplayer => Config.Get("BundleCompiler_Single", true);
+        public static bool BundleMenus => Config.Get("BundleCompiler_Menu", true);
+
+        #endregion
+
         public static void CompileBundles(FrostyTaskWindow? task = null)
         {
             int idx = 0;
             foreach (BundleCallStack callStack in CacheManager.RootCallStacks)
             {
+                if (CacheManager.LevelTypeCache.SingleplayerBundleCache.Contains(callStack.CallerId) && !BundleSingleplayer)
+                    continue;
+                
+                if (CacheManager.LevelTypeCache.MultiplayerBundleCache.Contains(callStack.CallerId) && !BundleMultiplayer)
+                    continue;
+                
+                if (CacheManager.LevelTypeCache.MenuBundleCache.Contains(callStack.CallerId) && !BundleMenus)
+                    continue;
+
                 CompileBundle(callStack, task);
 
                 idx++;
@@ -44,6 +61,15 @@ namespace BundleCompiler
             foreach (BundleCallStack callStack in CacheManager.RootCallStacks)
             {
                 if (callStack.Caller.Type != BundleType.SubLevel)
+                    continue;
+                
+                if (CacheManager.LevelTypeCache.SingleplayerBundleCache.Contains(callStack.CallerId) && !BundleSingleplayer)
+                    continue;
+                
+                if (CacheManager.LevelTypeCache.MultiplayerBundleCache.Contains(callStack.CallerId) && !BundleMultiplayer)
+                    continue;
+                
+                if (CacheManager.LevelTypeCache.MenuBundleCache.Contains(callStack.CallerId) && !BundleMenus)
                     continue;
 
                 CompileIdTable(callStack);
