@@ -96,9 +96,12 @@ public class BundleEditor
             
             objects.Add(pointerRef);
         }
+
+        EbxAssetEntry netregEntry = App.AssetManager.GetEbxEntry(registry.FileGuid);
+        App.AssetManager.ModifyEbx(netregEntry.Name, registry);
         
-        App.AssetManager.ModifyEbx(App.AssetManager.GetEbxEntry(registry.FileGuid).Name, registry);
-        App.AssetManager.GetEbxEntry(registry.FileGuid).ModifiedEntry.DependentAssets.Add(assetEntry.Guid);
+        registry.AddDependency(assetEntry.Guid);
+        netregEntry.ModifiedEntry.DependentAssets.Add(assetEntry.Guid);
     }
 }
 
@@ -341,7 +344,120 @@ public class MeshExtension : BundleEditor
         }
 
         ((dynamic)mvDb.RootObject).Entries.Add(entry);
-        App.AssetManager.ModifyEbx(App.AssetManager.GetEbxEntry(mvDb.FileGuid).Name, mvDb);
+        EbxAssetEntry mvDbEntry = App.AssetManager.GetEbxEntry(mvDb.FileGuid);
+        App.AssetManager.ModifyEbx(mvDbEntry.Name, mvDb);
+        mvDb.AddDependency(assetEntry.Guid);
+        mvDbEntry.ModifiedEntry.DependentAssets.Add(assetEntry.Guid);
+    }
+}
+
+public class ObjectVariationExtension : BundleEditor
+{
+    public override string AssetType => "ObjectVariation";
+
+    public override void Ebx(EbxAssetEntry assetEntry, BundleCallStack bundleEntry)
+    {
+        if (BundleOperator.CacheManager.GetMvdbBundle(bundleEntry.CallerId) == null)
+            return;
+        EbxAsset mvdb = BundleOperator.CacheManager.GetMvdbBundle(bundleEntry.CallerId)!;
+        dynamic mvdbRoot = mvdb.RootObject;
+
+        dynamic newMvEntry = TypeLibrary.CreateObject("MeshVariationDatabaseEntry"); //Create a new entry for us to add to the MVDB
+        
+        EbxAsset asset = App.AssetManager.GetEbx(assetEntry);
+        dynamic root = asset.RootObject;
+        uint hash = root.NameHash;
+        newMvEntry.VariationAssetNameHash = hash;
+
+        EbxAssetEntry? meshEntry = null;
+        MeshVariation? refVar = null;
+        if (MeshVariationDb.FindVariations(hash, true) != null)
+        {
+            refVar = MeshVariationDb.FindVariations(hash, true).First();
+            meshEntry = App.AssetManager.GetEbxEntry(refVar.MeshGuid);
+        }
+        else
+        {
+            // TODO: Make use of vbx project to store variations of a mesh in text format
+            // We should make a new file format, something like a metadata file which contains stuff like this which the user can specify
+            App.Logger.LogWarning("Currently duped object variations aren't supported, therefore this cannot be added to mvdbs. Please tell ywingpilot2!");
+        }
+
+        if (meshEntry == null)
+        {
+            App.Logger.LogError("Could not find mesh for variation {0}", assetEntry.Name);
+            return;
+        }
+
+        // The variation and mesh entry need to be in the same mvdb
+        if (!meshEntry.Bundles.Contains(bundleEntry.CallerId))
+        {
+            AddToBundle(meshEntry, bundleEntry);
+        }
+
+        EbxAsset mesh = App.AssetManager.GetEbx(meshEntry);
+        newMvEntry.Mesh = new PointerRef(new EbxImportReference { FileGuid = meshEntry.Guid, ClassGuid = mesh.RootInstanceGuid});
+
+        int idx = -1;
+        foreach (dynamic assetObject in asset.Objects)
+        {
+            idx++;
+            if (assetObject.GetType().Name != "MeshMaterialVariation")
+                continue;
+            
+            dynamic newMaterialEntry = TypeLibrary.CreateObject("MeshVariationDatabaseMaterial");
+            newMaterialEntry.MaterialVariation = new PointerRef(new EbxImportReference
+            {
+                FileGuid = assetEntry.Guid,
+                ClassGuid = assetObject.GetInstanceGuid().ExportedGuid
+            });
+            
+            if (refVar != null)
+            {
+                newMaterialEntry.Material = new PointerRef(new EbxImportReference
+                { FileGuid = meshEntry.Guid, 
+                    ClassGuid = refVar.Materials[idx - 1].MaterialGuid });
+            }
+            else
+            {
+                dynamic? mat = mesh.Objects.ElementAtOrDefault(idx);
+                if (mat == null)
+                {
+                    App.Logger.LogError("Unable to find material on {0} for variation {1}", meshEntry.Filename, assetEntry.Filename);
+                    continue;
+                }
+                newMaterialEntry.Material = new PointerRef(new EbxImportReference
+                { FileGuid = meshEntry.Guid, 
+                    ClassGuid = mat.GetInstanceGuid().ExportedGuid });
+            }
+
+            if (assetObject.Shader.TextureParameters.Count != 0)
+            {
+                newMaterialEntry.TextureParameters = assetObject.Shader.TextureParameters;
+            }
+            else if (refVar != null)
+            {
+                MeshVariationMaterial material = refVar.Materials[idx - 1];
+                foreach (dynamic texParam in (dynamic)material.TextureParameters)
+                {
+                    newMaterialEntry.TextureParameters.Add(texParam);
+                    PointerRef value = texParam.Value;
+                    EbxAssetEntry textureEntry = App.AssetManager.GetEbxEntry(value.External.FileGuid);
+                    if (!textureEntry.Bundles.Contains(bundleEntry.CallerId))
+                    {
+                        AddToBundle(textureEntry, bundleEntry);
+                    }
+                }
+            }
+
+            newMvEntry.Materials.Add(newMaterialEntry);
+        }
+
+        mvdbRoot.Entries.Add(newMvEntry);
+        EbxAssetEntry mvdbEntry = App.AssetManager.GetEbxEntry(mvdb.FileGuid);
+        App.AssetManager.ModifyEbx(mvdbEntry.Name, mvdb);
+        mvdb.AddDependency(assetEntry.Guid);
+        mvdbEntry.ModifiedEntry.DependentAssets.Add(assetEntry.Guid);
     }
 }
 
