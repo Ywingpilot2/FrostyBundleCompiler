@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Frosty.Core;
 using FrostySdk;
 using FrostySdk.IO;
@@ -14,6 +15,8 @@ public class GenerateUnlockIdsExtension : MenuExtension
 
     public override RelayCommand MenuItemClicked => new RelayCommand(o =>
     {
+        List<uint> ids = new List<uint>();
+
         foreach (EbxAssetEntry assetEntry in App.AssetManager.EnumerateEbx("UnlockAssetBase", modifiedOnly:true))
         {
             if (BundleOperator.CacheManager.IdCache.UnlockAssetToId.ContainsKey(assetEntry.Name))
@@ -23,10 +26,10 @@ public class GenerateUnlockIdsExtension : MenuExtension
             dynamic root = asset.RootObject;
             uint id = root.Identifier;
             
-            if (BundleOperator.CacheManager.IdCache.UnlockIds.Contains((int)id))
+            if (BundleOperator.CacheManager.IdCache.UnlockIds.Contains((int)id) || ids.Contains(id))
             {
                 uint newId = (uint)Utils.HashString(assetEntry.Name);
-                if (BundleOperator.CacheManager.IdCache.UnlockIds.Contains((int)newId))
+                if (BundleOperator.CacheManager.IdCache.UnlockIds.Contains((int)newId) || ids.Contains(newId))
                 {
                     Random rng = new Random();
                     newId = (uint)rng.Next(0, int.MaxValue);
@@ -35,6 +38,8 @@ public class GenerateUnlockIdsExtension : MenuExtension
                 root.Identifier = newId;
                 App.AssetManager.ModifyEbx(assetEntry.Name, asset);
             }
+            
+            ids.Add(root.Identifier);
         }
     });
 }
